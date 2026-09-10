@@ -28,19 +28,49 @@ export function createApp(db) {
 
   app.use("/api", currentUser);
 
-  // List the caller's own notes.
+  // List the caller's own notes. `?archived=` filters: "0" active only,
+  // "1" archived only, "all" both. Anything else is a client mistake.
   app.get("/api/notes", (req, res) => {
-    const rows = db
-      .prepare("SELECT id, title, body, created_at FROM notes WHERE user_id = ? ORDER BY id")
-      .all(req.userId);
+    const filter = req.query.archived === undefined ? "0" : String(req.query.archived);
+    if (!["0", "1", "all"].includes(filter)) {
+      return res.status(400).json({ error: "archived must be 0, 1 or all" });
+    }
+
+    const rows =
+      filter === "all"
+        ? db
+            .prepare(
+              "SELECT id, title, body, created_at, archived FROM notes WHERE user_id = ? ORDER BY id",
+            )
+            .all(req.userId)
+        : db
+            .prepare(
+              "SELECT id, title, body, created_at, archived FROM notes WHERE user_id = ? AND archived = ? ORDER BY id",
+            )
+            .all(req.userId, Number(filter));
+
     res.json(rows);
   });
 
-  // Read one note.
+  // Read one of the caller's own notes.
+  //
+  // The owner is part of the WHERE clause, not an if-statement afterwards:
+  // a note belonging to somebody else is never loaded in the first place, so
+  // there is no row sitting in memory for a later refactor to leak. A note
+  // that exists but belongs to another user is answered exactly like one that
+  // does not exist — "403, wrong owner" would still confirm it is there, and
+  // that existence is itself somebody else's business.
   app.get("/api/notes/:id", (req, res) => {
+    const id = Number(req.params.id);
+    if (!Number.isInteger(id) || id <= 0) {
+      return res.status(400).json({ error: "invalid note id" });
+    }
+
     const note = db
-      .prepare("SELECT id, user_id, title, body, created_at FROM notes WHERE id = ?")
-      .get(Number(req.params.id));
+      .prepare(
+        "SELECT id, title, body, created_at, archived FROM notes WHERE id = ? AND user_id = ?",
+      )
+      .get(id, req.userId);
     if (!note) return res.status(404).json({ error: "not found" });
     res.json(note);
   });
@@ -58,6 +88,29 @@ export function createApp(db) {
       .prepare("SELECT id, title, body, created_at FROM notes WHERE id = ?")
       .get(info.lastInsertRowid);
     res.status(201).json(created);
+  });
+
+  // Archive or unarchive one of the caller's own notes. The owner condition
+  // lives in the UPDATE itself: a note belonging to someone else is never
+  // fetched, so there is no row to accidentally act on.
+  app.patch("/api/notes/:id/archive", (req, res) => {
+    const id = Number(req.params.id);
+    if (!Number.isInteger(id) || id <= 0) {
+      return res.status(400).json({ error: "invalid note id" });
+    }
+    if (typeof req.body?.archived !== "boolean") {
+      return res.status(400).json({ error: "archived must be a boolean" });
+    }
+
+    const info = db
+      .prepare("UPDATE notes SET archived = ? WHERE id = ? AND user_id = ?")
+      .run(req.body.archived ? 1 : 0, id, req.userId);
+    if (info.changes === 0) return res.status(404).json({ error: "not found" });
+
+    const updated = db
+      .prepare("SELECT id, title, body, created_at, archived FROM notes WHERE id = ? AND user_id = ?")
+      .get(id, req.userId);
+    res.json(updated);
   });
 
   // Delete one of the caller's own notes.

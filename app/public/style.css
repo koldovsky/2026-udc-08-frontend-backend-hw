@@ -1,4 +1,13 @@
-:root { color-scheme: light dark; }
+:root {
+  color-scheme: light dark;
+  /* Lighthouse flagged the seeded #8884 / #8881: against the page they came
+     out at 1.48:1 and 1.08:1, so a control's edge was invisible even though
+     its label read fine. WCAG 1.4.11 wants 3:1 for the boundary of a UI
+     component. light-dark() keeps one value per role instead of a media
+     query per rule. */
+  --edge: light-dark(#767676, #9a9a9a);   /* control borders */
+  --surface: light-dark(#ececec, #333333); /* control fill */
+}
 body {
   font: 15px/1.5 system-ui, sans-serif;
   max-width: 680px; margin: 2rem auto; padding: 0 1rem;
@@ -6,10 +15,40 @@ body {
 header { display: flex; align-items: baseline; justify-content: space-between; gap: 1rem; }
 h1 { font-size: 1.4rem; margin: 0; }
 form { display: flex; gap: .5rem; margin: 1.2rem 0; }
-input { flex: 1; padding: .5rem; border: 1px solid #8884; border-radius: 6px; font: inherit; }
-button { padding: .5rem .9rem; border: 1px solid #8884; border-radius: 6px; background: #8881; font: inherit; cursor: pointer; }
+input { flex: 1; padding: .5rem; border: 1px solid var(--edge); border-radius: 6px; font: inherit; }
+/* min-height/min-width keep the tap target at 44px even when the label is
+   short. WCAG 2.2 SC 2.5.8 (AA) asks for 24x24 CSS px; 44x44 is the stricter
+   SC 2.5.5 (AAA) figure, taken here as the design target. */
+button {
+  padding: .5rem .9rem; border: 1px solid var(--edge); border-radius: 6px;
+  background: var(--surface); font: inherit; cursor: pointer;
+  min-height: 44px; min-width: 44px;
+}
+:where(button, input, select):focus-visible { outline: 2px solid currentcolor; outline-offset: 2px; }
+
+/* Видно скрінрідеру, не видно оком. `display: none` і `visibility: hidden`
+   тут не годяться — вони ховають елемент і від допоміжних технологій. */
+.sr-only {
+  position: absolute; width: 1px; height: 1px;
+  margin: -1px; padding: 0; border: 0;
+  clip-path: inset(50%); overflow: hidden; white-space: nowrap;
+}
+
+.filter { display: flex; align-items: center; gap: .5rem; margin: 1.2rem 0; }
+.filter input { flex: none; width: 1.15rem; height: 1.15rem; }
+.filter label { cursor: pointer; }
+
 ul { list-style: none; padding: 0; display: grid; gap: .6rem; }
-li { border: 1px solid #8884; border-radius: 8px; padding: .7rem .9rem; display: flex; gap: 1rem; align-items: flex-start; }
-li .grow { flex: 1; }
-li strong { display: block; }
-li small { opacity: .65; }
+li { border: 1px solid var(--edge); border-radius: 8px; padding: .7rem .9rem; display: flex; gap: .6rem; align-items: flex-start; flex-wrap: wrap; }
+li .grow { flex: 1; min-width: 12rem; }
+li small { opacity: .75; }
+
+/* The archived state never rests on this tint alone — the badge says "Архів"
+   in words, so the muted card is a hint, not the message. */
+li.archived { background: light-dark(#f0f0f0, #262626); }
+/* Not colour alone: the badge carries the word "Архів" as text. */
+.badge {
+  display: inline-block; vertical-align: baseline;
+  font-size: .75rem; font-weight: 600; text-transform: uppercase; letter-spacing: .04em;
+  padding: .1rem .45rem; border: 1px solid currentcolor; border-radius: 999px;
+}
