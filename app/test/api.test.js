@@ -58,6 +58,101 @@ describe("GET /api/notes/:id", () => {
   it("404s for a note that does not exist", async () => {
     await asOlya(request(app).get("/api/notes/999")).expect(404);
   });
+
+  // The suite's other cross-user test is on DELETE, and it was green whether
+  // or not the read path was scoped. This one asks the same question of the
+  // read path, which is where the seeded hole was: reading someone else's
+  // note must be refused, not merely absent from your own list.
+  it("will not read someone else's note", async () => {
+    const res = await asOlya(request(app).get("/api/notes/3"));
+    expect(res.status).toBe(404);
+    // Not a single field of the other user's note may come back.
+    expect(res.body).not.toHaveProperty("title");
+    expect(res.body).not.toHaveProperty("body");
+    expect(JSON.stringify(res.body)).not.toContain("пароль від сейфа");
+  });
+
+  it("does not expose user_id on a note the caller may read", async () => {
+    const res = await asOlya(request(app).get("/api/notes/1")).expect(200);
+    expect(res.body).not.toHaveProperty("user_id");
+  });
+});
+
+describe("PATCH /api/notes/:id/archive", () => {
+  it("archives the caller's own note and takes it out of the active list", async () => {
+    const res = await asOlya(request(app).patch("/api/notes/1/archive"))
+      .send({ archived: true })
+      .expect(200);
+    expect(res.body.archived).toBe(1);
+
+    const active = await asOlya(request(app).get("/api/notes")).expect(200);
+    expect(active.body.map((n) => n.id)).toEqual([2]);
+
+    const archived = await asOlya(request(app).get("/api/notes?archived=1")).expect(200);
+    expect(archived.body.map((n) => n.id)).toEqual([1]);
+  });
+
+  it("restores an archived note", async () => {
+    await asOlya(request(app).patch("/api/notes/1/archive")).send({ archived: true }).expect(200);
+    await asOlya(request(app).patch("/api/notes/1/archive")).send({ archived: false }).expect(200);
+
+    const active = await asOlya(request(app).get("/api/notes")).expect(200);
+    expect(active.body.map((n) => n.id)).toEqual([1, 2]);
+  });
+
+  it("does not leak internal columns", async () => {
+    const res = await asOlya(request(app).patch("/api/notes/1/archive"))
+      .send({ archived: true })
+      .expect(200);
+    expect(Object.keys(res.body).sort()).toEqual([
+      "archived",
+      "body",
+      "created_at",
+      "id",
+      "title",
+    ]);
+  });
+
+  it("rejects an archived flag that is not a boolean", async () => {
+    await asOlya(request(app).patch("/api/notes/1/archive")).send({ archived: "true" }).expect(400);
+    await asOlya(request(app).patch("/api/notes/1/archive")).send({ archived: 1 }).expect(400);
+    await asOlya(request(app).patch("/api/notes/1/archive")).send({}).expect(400);
+  });
+
+  it("404s for a note that does not exist", async () => {
+    await asOlya(request(app).patch("/api/notes/999/archive"))
+      .send({ archived: true })
+      .expect(404);
+  });
+
+  it("will not archive someone else's note", async () => {
+    await asOlya(request(app).patch("/api/notes/3/archive"))
+      .send({ archived: true })
+      .expect(404);
+
+    // And the note is genuinely untouched, not merely reported as missing.
+    const taras = await asTaras(request(app).get("/api/notes")).expect(200);
+    expect(taras.body.map((n) => n.id)).toEqual([3]);
+  });
+});
+
+describe("GET /api/notes?archived=", () => {
+  it("returns an empty archive before anything is archived", async () => {
+    const res = await asOlya(request(app).get("/api/notes?archived=1")).expect(200);
+    expect(res.body).toEqual([]);
+  });
+
+  it("rejects an archived filter it does not understand", async () => {
+    await asOlya(request(app).get("/api/notes?archived=yes")).expect(400);
+    await asOlya(request(app).get("/api/notes?archived=")).expect(400);
+  });
+
+  it("keeps the archive scoped to the caller", async () => {
+    await asTaras(request(app).patch("/api/notes/3/archive")).send({ archived: true }).expect(200);
+
+    const olya = await asOlya(request(app).get("/api/notes?archived=1")).expect(200);
+    expect(olya.body).toEqual([]);
+  });
 });
 
 describe("DELETE /api/notes/:id", () => {
