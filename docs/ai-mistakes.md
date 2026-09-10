@@ -37,7 +37,7 @@ prebuilds не існує.
 
 **Як полагодили.** Після мого зауваження агент перевірив вміст самого пакета:
 
-```
+```text
 package/prebuilds/win32-x64.node      ← готовий бінарник під платформу
 package/prebuilds/linux-x64.node
 package/prebuilds/darwin-arm64.node
@@ -81,7 +81,7 @@ package/prebuilds/darwin-arm64.node
 **Що просили.** Під час перевірки Task A я показав агенту помилку з консолі
 браузера:
 
-```
+```text
 Failed to load resource: the server responded with a status of 404 (Not Found)
 ```
 
@@ -145,7 +145,7 @@ if (typeof req.body?.archived !== "boolean") { ... }
 
 і перезапустив набір:
 
-```
+```text
 × rejects a non-boolean archived value
 × rejects a missing archived field
 × leaves the note untouched when the request is rejected
@@ -191,7 +191,8 @@ got 200` і буквально `expected '...' not to contain 'пароль'`), 
   без додаткового коду;
 - `aria-label` з назвою нотатки (`"Архівувати: Список покупок"`) — інакше
   скрінрідер читав би ряд однакових «Архівувати»;
-- `min-height/min-width: 44px` — розмір цілі за WCAG 2.5.8;
+- `min-height/min-width: 44px` — розмір цілі; AA-мінімум (SC 2.5.8) — 24×24
+  CSS-пікселі, 44×44 — це AAA-рівень (SC 2.5.5), узятий як проєктна ціль;
 - `:focus-visible` з явним контуром — дефолтний фокус на темному тлі губиться;
 - стан архіву дублюється **текстом** (бейдж «АРХІВ»), а не лише фоном;
 - `<label for="show-archived">` коректно зв'язаний з чекбоксом;

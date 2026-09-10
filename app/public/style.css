@@ -17,13 +17,22 @@ h1 { font-size: 1.4rem; margin: 0; }
 form { display: flex; gap: .5rem; margin: 1.2rem 0; }
 input { flex: 1; padding: .5rem; border: 1px solid var(--edge); border-radius: 6px; font: inherit; }
 /* min-height/min-width keep the tap target at 44px even when the label is
-   short — WCAG 2.5.8 target size. */
+   short. WCAG 2.2 SC 2.5.8 (AA) asks for 24x24 CSS px; 44x44 is the stricter
+   SC 2.5.5 (AAA) figure, taken here as the design target. */
 button {
   padding: .5rem .9rem; border: 1px solid var(--edge); border-radius: 6px;
   background: var(--surface); font: inherit; cursor: pointer;
   min-height: 44px; min-width: 44px;
 }
-:where(button, input, select):focus-visible { outline: 2px solid currentColor; outline-offset: 2px; }
+:where(button, input, select):focus-visible { outline: 2px solid currentcolor; outline-offset: 2px; }
+
+/* Видно скрінрідеру, не видно оком. `display: none` і `visibility: hidden`
+   тут не годяться — вони ховають елемент і від допоміжних технологій. */
+.sr-only {
+  position: absolute; width: 1px; height: 1px;
+  margin: -1px; padding: 0; border: 0;
+  clip-path: inset(50%); overflow: hidden; white-space: nowrap;
+}
 
 .filter { display: flex; align-items: center; gap: .5rem; margin: 1.2rem 0; }
 .filter input { flex: none; width: 1.15rem; height: 1.15rem; }
@@ -41,5 +50,5 @@ li.archived { background: light-dark(#f0f0f0, #262626); }
 .badge {
   display: inline-block; vertical-align: baseline;
   font-size: .75rem; font-weight: 600; text-transform: uppercase; letter-spacing: .04em;
-  padding: .1rem .45rem; border: 1px solid currentColor; border-radius: 999px;
+  padding: .1rem .45rem; border: 1px solid currentcolor; border-radius: 999px;
 }

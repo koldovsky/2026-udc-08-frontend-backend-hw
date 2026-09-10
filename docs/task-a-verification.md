@@ -71,7 +71,7 @@
 
 `Show accessibility tree` увімкнено. Ключове:
 
-```
+```text
 checkbox "Показувати архівовані" focusable: true focused: true
 ...
 Label for input#show-archived
@@ -89,8 +89,13 @@ Label for input#show-archived
   `onclick`: працюють з клавіатури і по Enter/Space без додаткового коду.
 - `aria-label` з назвою нотатки на кожній кнопці — інакше скрінрідер читає
   ряд однакових «Архівувати».
-- `min-height: 44px; min-width: 44px` на кнопках — розмір цілі (WCAG 2.5.8).
-- `:focus-visible` з `outline: 2px solid currentColor` — фокус видно завжди;
+- `min-height: 44px; min-width: 44px` на кнопках — розмір цілі. Обов'язковий
+  мінімум за WCAG 2.2 SC 2.5.8 (Target Size Minimum, рівень AA) — **24×24**
+  CSS-пікселі, ще й з винятками (достатній інтервал між цілями, ціль усередині
+  рядка тексту, наявність еквівалентної дії поруч). 44×44 — це вже
+  SC 2.5.5 (Target Size Enhanced, рівень **AAA**); узяли його як проєктну
+  ціль, бо запас тут дешевий, а не тому, що AA цього вимагає.
+- `:focus-visible` з `outline: 2px solid currentcolor` — фокус видно завжди;
   дефолтний контур легко губиться на темному тлі.
 - Стан архіву дублюється текстом (бейдж), а не лише фоном.
 
@@ -98,7 +103,7 @@ Label for input#show-archived
 
 У консолі під час перевірки була рівно одна помилка:
 
-```
+```text
 Failed to load resource: the server responded with a status of 404 (Not Found)
 ```
 

@@ -37,7 +37,7 @@ if (!hasArchived) {
 
 ## 2. Ендпоінт
 
-```
+```http
 PATCH /api/notes/:id/archive
 { "archived": true | false }
 ```
@@ -74,11 +74,16 @@ PATCH /api/notes/:id/archive
 
 ## 5. Фільтр списку
 
-```
-GET /api/notes             → активні (за замовчуванням)
-GET /api/notes?archived=1  → лише архівовані
+```http
+GET /api/notes              → активні (параметр опущено)
+GET /api/notes?archived=0   → активні — те саме, лише явно
+GET /api/notes?archived=1   → лише архівовані
 GET /api/notes?archived=all → усі
 ```
+
+Валідних значень три: `0`, `1`, `all`. `archived=0` рівнозначне опущеному
+параметру — саме його шле UI (`app/public/app.js`), щоб запит завжди
+проговорював свій намір, а не покладався на замовчування сервера.
 
 Будь-яке інше значення — `400`, а не мовчазне «покажемо все». Список тепер
 віддає й саме поле `archived`, щоб UI міг намалювати бейдж і правильну кнопку.
@@ -99,7 +104,7 @@ GET /api/notes?archived=all → усі
 `typeof archived !== "boolean"` — 3 тести одразу почервоніли; повернули —
 знову зелено. Набір, який зеленіє за будь-якого коду, нічого не доводить.
 
-```
+```text
 Test Files  2 passed (2)
      Tests  24 passed (24)     ← 9 засіяних + 15 нових
 ```

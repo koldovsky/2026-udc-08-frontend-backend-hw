@@ -20,7 +20,11 @@
 
     <main>
       <form id="new-note">
+        <!-- Підписи приховані візуально, а не від скрінрідера: placeholder
+             зникає під час набору, тож сам по собі назвою поля не є. -->
+        <label class="sr-only" for="title">Заголовок нотатки</label>
         <input id="title" placeholder="Заголовок" required />
+        <label class="sr-only" for="body">Текст нотатки</label>
         <input id="body" placeholder="Текст" />
         <button type="submit">Додати</button>
       </form>

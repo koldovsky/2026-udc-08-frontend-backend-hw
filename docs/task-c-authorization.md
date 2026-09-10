@@ -19,7 +19,7 @@ const note = db
 Живий сервер, `http://localhost:3080`. Оля — `x-user-id: 1`, нотатка №3
 належить Тарасу (`user_id: 2`).
 
-```
+```http
 GET /api/notes/3
 x-user-id: 1
 ```
@@ -54,7 +54,7 @@ x-user-id: 1
 
 `app/test/authorization.test.js`. Запуск **на коді до фіксу**:
 
-```
+```text
 ❯ test/authorization.test.js (13 tests | 4 failed)
   × will not let one user read another user's note
     → expected 404 "Not Found", got 200 "OK"
@@ -151,7 +151,7 @@ untouched after a refused archive` перевіряє, що після відм�
 
 ## Результат
 
-```
+```text
 Test Files  3 passed (3)
      Tests  37 passed (37)
 ```
