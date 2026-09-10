@@ -18,14 +18,21 @@
       </label>
     </header>
 
-    <form id="new-note">
-      <input id="title" placeholder="Заголовок" required />
-      <input id="body" placeholder="Текст" />
-      <button type="submit">Додати</button>
-    </form>
+    <main>
+      <form id="new-note">
+        <input id="title" placeholder="Заголовок" required />
+        <input id="body" placeholder="Текст" />
+        <button type="submit">Додати</button>
+      </form>
 
-    <ul id="notes"></ul>
-    <p id="empty" hidden>Нотаток поки немає.</p>
+      <div class="filter">
+        <input type="checkbox" id="show-archived" />
+        <label for="show-archived">Показувати архівовані</label>
+      </div>
+
+      <ul id="notes"></ul>
+      <p id="empty" hidden>Нотаток поки немає.</p>
+    </main>
 
     <script type="module" src="./app.js"></script>
   </body>

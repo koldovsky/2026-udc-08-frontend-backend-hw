@@ -26,6 +26,15 @@ export function createDb(file = ":memory:") {
     );
   `);
 
+  // Migration: `archived` was added after the first seed, so an existing
+  // notes.db has the table without it. Adding the column keeps that data.
+  const hasArchived = db
+    .prepare("SELECT COUNT(*) AS n FROM pragma_table_info('notes') WHERE name = 'archived'")
+    .get().n > 0;
+  if (!hasArchived) {
+    db.exec("ALTER TABLE notes ADD COLUMN archived INTEGER NOT NULL DEFAULT 0");
+  }
+
   const seeded = db.prepare("SELECT COUNT(*) AS n FROM users").get().n > 0;
   if (!seeded) {
     db.prepare("INSERT INTO users (id, name) VALUES (?, ?)").run(1, "Оля");
