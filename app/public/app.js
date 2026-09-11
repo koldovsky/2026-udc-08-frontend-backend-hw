@@ -6,6 +6,7 @@ const userSelect = document.querySelector("#user");
 const list = document.querySelector("#notes");
 const empty = document.querySelector("#empty");
 const form = document.querySelector("#new-note");
+const showArchivedCheckbox = document.querySelector("#show-archived");
 
 function headers() {
   return { "content-type": "application/json", "x-user-id": userSelect.value };
@@ -14,9 +15,12 @@ function headers() {
 async function load() {
   const res = await fetch("/api/notes", { headers: headers() });
   const notes = await res.json();
+  const showArchived = showArchivedCheckbox.checked;
+
+  const filtered = showArchived ? notes.filter((n) => n.archived) : notes.filter((n) => !n.archived);
 
   list.replaceChildren(
-    ...notes.map((n) => {
+    ...filtered.map((n) => {
       const li = document.createElement("li");
 
       const grow = document.createElement("div");
@@ -29,6 +33,35 @@ async function load() {
       when.textContent = n.created_at;
       grow.append(title, body, document.createElement("br"), when);
 
+      const buttons = document.createElement("div");
+      buttons.className = "buttons";
+
+      if (showArchived) {
+        const unarchive = document.createElement("button");
+        unarchive.textContent = "Повернути з архіву";
+        unarchive.addEventListener("click", async () => {
+          await fetch(`/api/notes/${n.id}`, {
+            method: "PATCH",
+            headers: headers(),
+            body: JSON.stringify({ archived: false }),
+          });
+          load();
+        });
+        buttons.append(unarchive);
+      } else {
+        const archive = document.createElement("button");
+        archive.textContent = "Архівувати";
+        archive.addEventListener("click", async () => {
+          await fetch(`/api/notes/${n.id}`, {
+            method: "PATCH",
+            headers: headers(),
+            body: JSON.stringify({ archived: true }),
+          });
+          load();
+        });
+        buttons.append(archive);
+      }
+
       const del = document.createElement("button");
       del.textContent = "Видалити";
       del.addEventListener("click", async () => {
@@ -36,11 +69,20 @@ async function load() {
         load();
       });
 
-      li.append(grow, del);
+      buttons.append(del);
+      li.append(grow, buttons);
       return li;
     }),
   );
-  empty.hidden = notes.length > 0;
+
+  if (filtered.length === 0) {
+    if (showArchived) {
+      empty.textContent = "Архівованих нотаток немає.";
+    } else {
+      empty.textContent = "Нотаток поки немає.";
+    }
+  }
+  empty.hidden = filtered.length > 0;
 }
 
 form.addEventListener("submit", async (e) => {
@@ -58,4 +100,5 @@ form.addEventListener("submit", async (e) => {
 });
 
 userSelect.addEventListener("change", load);
+showArchivedCheckbox.addEventListener("change", load);
 load();

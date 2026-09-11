@@ -28,10 +28,10 @@ export function createApp(db) {
 
   app.use("/api", currentUser);
 
-  // List the caller's own notes.
+  // List the caller's own notes (both archived and active).
   app.get("/api/notes", (req, res) => {
     const rows = db
-      .prepare("SELECT id, title, body, created_at FROM notes WHERE user_id = ? ORDER BY id")
+      .prepare("SELECT id, title, body, archived, created_at FROM notes WHERE user_id = ? ORDER BY id")
       .all(req.userId);
     res.json(rows);
   });
@@ -39,8 +39,8 @@ export function createApp(db) {
   // Read one note.
   app.get("/api/notes/:id", (req, res) => {
     const note = db
-      .prepare("SELECT id, user_id, title, body, created_at FROM notes WHERE id = ?")
-      .get(Number(req.params.id));
+      .prepare("SELECT id, user_id, title, body, archived, created_at FROM notes WHERE id = ? AND user_id = ?")
+      .get(Number(req.params.id), req.userId);
     if (!note) return res.status(404).json({ error: "not found" });
     res.json(note);
   });
@@ -67,6 +67,22 @@ export function createApp(db) {
       .run(Number(req.params.id), req.userId);
     if (info.changes === 0) return res.status(404).json({ error: "not found" });
     res.status(204).end();
+  });
+
+  // Archive or unarchive one of the caller's own notes.
+  app.patch("/api/notes/:id", (req, res) => {
+    const archived = typeof req.body?.archived === "boolean" ? (req.body.archived ? 1 : 0) : undefined;
+    if (archived === undefined) return res.status(400).json({ error: "archived field is required" });
+
+    const info = db
+      .prepare("UPDATE notes SET archived = ? WHERE id = ? AND user_id = ?")
+      .run(archived, Number(req.params.id), req.userId);
+    if (info.changes === 0) return res.status(404).json({ error: "not found" });
+
+    const updated = db
+      .prepare("SELECT id, title, body, archived, created_at FROM notes WHERE id = ?")
+      .get(Number(req.params.id));
+    res.json(updated);
   });
 
   return app;
