@@ -6,10 +6,47 @@ body {
 header { display: flex; align-items: baseline; justify-content: space-between; gap: 1rem; }
 h1 { font-size: 1.4rem; margin: 0; }
 form { display: flex; gap: .5rem; margin: 1.2rem 0; }
+form[hidden] { display: none; }
 input { flex: 1; padding: .5rem; border: 1px solid #8884; border-radius: 6px; font: inherit; }
-button { padding: .5rem .9rem; border: 1px solid #8884; border-radius: 6px; background: #8881; font: inherit; cursor: pointer; }
+button {
+  padding: .5rem .9rem;
+  min-height: 44px;
+  min-width: 44px;
+  border: 1px solid #555;
+  border-radius: 6px;
+  background: #f3f3f3;
+  color: #111;
+  font: inherit;
+  cursor: pointer;
+}
+@media (prefers-color-scheme: dark) {
+  button { background: #2a2a2a; color: #f4f4f4; border-color: #888; }
+}
+.filters {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: .5rem;
+  margin: 0 0 1rem;
+}
+.filters p { margin: 0; font-weight: 600; }
+.filters button[aria-pressed="true"] {
+  background: #1a1a1a;
+  color: #fff;
+  border-color: #1a1a1a;
+}
+@media (prefers-color-scheme: dark) {
+  .filters button[aria-pressed="true"] {
+    background: #f2f2f2;
+    color: #111;
+    border-color: #f2f2f2;
+  }
+}
 ul { list-style: none; padding: 0; display: grid; gap: .6rem; }
 li { border: 1px solid #8884; border-radius: 8px; padding: .7rem .9rem; display: flex; gap: 1rem; align-items: flex-start; }
+li.archived { opacity: .85; }
 li .grow { flex: 1; }
 li strong { display: block; }
 li small { opacity: .65; }
+li .actions { display: flex; flex-direction: column; gap: .4rem; }
+#empty { opacity: .8; }
