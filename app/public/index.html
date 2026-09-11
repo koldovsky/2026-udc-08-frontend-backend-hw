@@ -24,8 +24,14 @@
       <button type="submit">Додати</button>
     </form>
 
+    <div class="filters" role="group" aria-labelledby="filter-label">
+      <p id="filter-label">Показати</p>
+      <button type="button" id="filter-active" aria-pressed="true">Активні</button>
+      <button type="button" id="filter-archived" aria-pressed="false">Архів</button>
+    </div>
+
     <ul id="notes"></ul>
-    <p id="empty" hidden>Нотаток поки немає.</p>
+    <p id="empty" role="status" hidden>Нотаток поки немає.</p>
 
     <script type="module" src="./app.js"></script>
   </body>

@@ -22,9 +22,18 @@ export function createDb(file = ":memory:") {
       user_id   INTEGER NOT NULL REFERENCES users(id),
       title     TEXT NOT NULL,
       body      TEXT NOT NULL DEFAULT '',
-      created_at TEXT NOT NULL DEFAULT (datetime('now'))
+      created_at TEXT NOT NULL DEFAULT (datetime('now')),
+      archived  INTEGER NOT NULL DEFAULT 0
     );
   `);
+
+  // Archive flag lives on notes.archived (0/1). New DBs get it from CREATE TABLE.
+  // Existing notes.db files from before this column keep their rows: ALTER only
+  // if the column is missing, so we do not drop or reseed data.
+  const noteCols = db.prepare("PRAGMA table_info(notes)").all();
+  if (!noteCols.some((c) => c.name === "archived")) {
+    db.exec("ALTER TABLE notes ADD COLUMN archived INTEGER NOT NULL DEFAULT 0");
+  }
 
   const seeded = db.prepare("SELECT COUNT(*) AS n FROM users").get().n > 0;
   if (!seeded) {
