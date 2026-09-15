@@ -6,17 +6,27 @@ const userSelect = document.querySelector("#user");
 const list = document.querySelector("#notes");
 const empty = document.querySelector("#empty");
 const form = document.querySelector("#new-note");
+const filterInputs = document.querySelectorAll('input[name="filter"]');
 
 function headers() {
   return { "content-type": "application/json", "x-user-id": userSelect.value };
 }
 
-async function load() {
-  const res = await fetch("/api/notes", { headers: headers() });
-  const notes = await res.json();
+function currentFilter() {
+  return document.querySelector('input[name="filter"]:checked').value;
+}
+
+let notes = [];
+// Archive/delete destroy the button that was just activated, so focus would
+// fall to <body>. Set only by those two handlers — never on load or filter.
+let focusListAfterRender = false;
+
+function render() {
+  const showArchived = currentFilter() === "archived";
+  const visible = notes.filter((n) => n.archived === showArchived);
 
   list.replaceChildren(
-    ...notes.map((n) => {
+    ...visible.map((n) => {
       const li = document.createElement("li");
 
       const grow = document.createElement("div");
@@ -29,18 +39,48 @@ async function load() {
       when.textContent = n.created_at;
       grow.append(title, body, document.createElement("br"), when);
 
+      const archive = document.createElement("button");
+      archive.type = "button";
+      archive.textContent = showArchived ? "Повернути з архіву" : "Архівувати";
+      archive.setAttribute("aria-label", `${archive.textContent}: ${n.title}`);
+      archive.addEventListener("click", async () => {
+        focusListAfterRender = true;
+        await fetch(`/api/notes/${n.id}/archive`, {
+          method: "PATCH",
+          headers: headers(),
+          body: JSON.stringify({ archived: !n.archived }),
+        });
+        load();
+      });
+
       const del = document.createElement("button");
+      del.type = "button";
       del.textContent = "Видалити";
+      del.setAttribute("aria-label", `Видалити: ${n.title}`);
       del.addEventListener("click", async () => {
+        focusListAfterRender = true;
         await fetch(`/api/notes/${n.id}`, { method: "DELETE", headers: headers() });
         load();
       });
 
-      li.append(grow, del);
+      li.append(grow, archive, del);
       return li;
     }),
   );
-  empty.hidden = notes.length > 0;
+
+  empty.hidden = visible.length > 0;
+  empty.textContent = showArchived ? "В архіві порожньо." : "Активних нотаток немає.";
+
+  if (focusListAfterRender) {
+    list.focus();
+    focusListAfterRender = false;
+  }
+}
+
+async function load() {
+  const res = await fetch("/api/notes", { headers: headers() });
+  notes = await res.json();
+  render();
 }
 
 form.addEventListener("submit", async (e) => {
@@ -58,4 +98,5 @@ form.addEventListener("submit", async (e) => {
 });
 
 userSelect.addEventListener("change", load);
+filterInputs.forEach((input) => input.addEventListener("change", render));
 load();
