@@ -1,4 +1,16 @@
-:root { color-scheme: light dark; }
+:root {
+  color-scheme: light dark;
+  /* Explicit tokens instead of a semi-transparent background over an
+     unknown canvas: `background: #8881` plus no `color` left button text
+     to the UA's dark-mode default (white) sitting on a background that
+     stayed light, giving ~1:1 contrast. axe-core caught this — see
+     docs/task-e-bonus.md. */
+  --btn-bg: #ececec;
+  --btn-fg: #16181c;
+}
+@media (prefers-color-scheme: dark) {
+  :root { --btn-bg: #2c2f33; --btn-fg: #f2f3f5; }
+}
 body {
   font: 15px/1.5 system-ui, sans-serif;
   max-width: 680px; margin: 2rem auto; padding: 0 1rem;
@@ -7,9 +19,23 @@ header { display: flex; align-items: baseline; justify-content: space-between; g
 h1 { font-size: 1.4rem; margin: 0; }
 form { display: flex; gap: .5rem; margin: 1.2rem 0; }
 input { flex: 1; padding: .5rem; border: 1px solid #8884; border-radius: 6px; font: inherit; }
-button { padding: .5rem .9rem; border: 1px solid #8884; border-radius: 6px; background: #8881; font: inherit; cursor: pointer; }
+button {
+  padding: .5rem .9rem; min-height: 44px; border: 1px solid #8884; border-radius: 6px;
+  background: var(--btn-bg); color: var(--btn-fg); font: inherit; cursor: pointer;
+}
+
+.view-switch { display: flex; gap: .5rem; margin: 1rem 0; }
+.view-switch button { min-width: 44px; }
+.view-switch button[aria-pressed="true"] {
+  background: #1d4ed8; border-color: #1d4ed8; color: #fff;
+}
+
 ul { list-style: none; padding: 0; display: grid; gap: .6rem; }
-li { border: 1px solid #8884; border-radius: 8px; padding: .7rem .9rem; display: flex; gap: 1rem; align-items: flex-start; }
-li .grow { flex: 1; }
-li strong { display: block; }
-li small { opacity: .65; }
+li.note { border: 1px solid #8884; border-radius: 8px; padding: .7rem .9rem; display: flex; gap: 1rem; align-items: flex-start; }
+li.note .grow { flex: 1; }
+li.note strong { display: block; }
+li.note small { opacity: .65; }
+li.note .actions { display: flex; flex-direction: column; gap: .4rem; }
+li.note--archived { border-style: dashed; }
+
+#empty { opacity: .75; }

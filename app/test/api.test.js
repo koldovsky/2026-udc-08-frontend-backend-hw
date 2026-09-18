@@ -31,6 +31,12 @@ describe("GET /api/notes", () => {
     const res = await asTaras(request(app).get("/api/notes")).expect(200);
     expect(res.body).toHaveLength(1);
   });
+
+  it("includes the archived flag as a boolean", async () => {
+    const res = await asOlya(request(app).get("/api/notes")).expect(200);
+    expect(res.body.every((n) => typeof n.archived === "boolean")).toBe(true);
+    expect(res.body.every((n) => n.archived === false)).toBe(true);
+  });
 });
 
 describe("POST /api/notes", () => {
@@ -57,6 +63,64 @@ describe("GET /api/notes/:id", () => {
 
   it("404s for a note that does not exist", async () => {
     await asOlya(request(app).get("/api/notes/999")).expect(404);
+  });
+
+  it("will not read someone else's note", async () => {
+    // Note 3 is Taras's ("Приватна нотатка Тараса"). Olya asking for it by id
+    // must be refused, not handed the row because the id matched.
+    await asOlya(request(app).get("/api/notes/3")).expect(404);
+  });
+});
+
+describe("PATCH /api/notes/:id/archive", () => {
+  it("archives the caller's own note", async () => {
+    const res = await asOlya(request(app).patch("/api/notes/1/archive"))
+      .send({ archived: true })
+      .expect(200);
+    expect(res.body.archived).toBe(true);
+
+    const list = await asOlya(request(app).get("/api/notes")).expect(200);
+    expect(list.body.find((n) => n.id === 1).archived).toBe(true);
+  });
+
+  it("restores an archived note", async () => {
+    await asOlya(request(app).patch("/api/notes/1/archive")).send({ archived: true }).expect(200);
+    const res = await asOlya(request(app).patch("/api/notes/1/archive"))
+      .send({ archived: false })
+      .expect(200);
+    expect(res.body.archived).toBe(false);
+  });
+
+  it("does not leak internal fields like user_id", async () => {
+    const res = await asOlya(request(app).patch("/api/notes/1/archive"))
+      .send({ archived: true })
+      .expect(200);
+    expect(res.body).not.toHaveProperty("user_id");
+  });
+
+  it("rejects a missing archived field", async () => {
+    await asOlya(request(app).patch("/api/notes/1/archive")).send({}).expect(400);
+  });
+
+  it("rejects a non-boolean archived value", async () => {
+    await asOlya(request(app).patch("/api/notes/1/archive"))
+      .send({ archived: "yes" })
+      .expect(400);
+  });
+
+  it("404s for a note that does not exist", async () => {
+    await asOlya(request(app).patch("/api/notes/999/archive"))
+      .send({ archived: true })
+      .expect(404);
+  });
+
+  it("will not archive someone else's note", async () => {
+    await asOlya(request(app).patch("/api/notes/3/archive"))
+      .send({ archived: true })
+      .expect(404);
+
+    const taras = await asTaras(request(app).get("/api/notes")).expect(200);
+    expect(taras.body.find((n) => n.id === 3).archived).toBe(false);
   });
 });
 

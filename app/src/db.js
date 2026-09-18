@@ -22,9 +22,22 @@ export function createDb(file = ":memory:") {
       user_id   INTEGER NOT NULL REFERENCES users(id),
       title     TEXT NOT NULL,
       body      TEXT NOT NULL DEFAULT '',
+      archived  INTEGER NOT NULL DEFAULT 0 CHECK (archived IN (0, 1)),
       created_at TEXT NOT NULL DEFAULT (datetime('now'))
     );
   `);
+
+  // Migration for on-disk databases created before `archived` existed:
+  // CREATE TABLE IF NOT EXISTS above is a no-op once the table already
+  // exists, so an older notes.db needs the column added explicitly.
+  const hasArchivedColumn = db
+    .prepare("SELECT 1 FROM pragma_table_info('notes') WHERE name = 'archived'")
+    .get();
+  if (!hasArchivedColumn) {
+    db.exec(
+      "ALTER TABLE notes ADD COLUMN archived INTEGER NOT NULL DEFAULT 0 CHECK (archived IN (0, 1))",
+    );
+  }
 
   const seeded = db.prepare("SELECT COUNT(*) AS n FROM users").get().n > 0;
   if (!seeded) {
