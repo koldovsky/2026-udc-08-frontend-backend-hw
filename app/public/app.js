@@ -49,12 +49,17 @@ function renderNote(n) {
       : `Архівувати нотатку «${n.title}»`,
   );
   archiveBtn.addEventListener("click", async () => {
-    await fetch(`/api/notes/${n.id}/archive`, {
-      method: "PATCH",
-      headers: headers(),
-      body: JSON.stringify({ archived: !archived }),
-    });
-    load();
+    try {
+      const res = await fetch(`/api/notes/${n.id}/archive`, {
+        method: "PATCH",
+        headers: headers(),
+        body: JSON.stringify({ archived: !archived }),
+      });
+      if (!res.ok) throw new Error(`Request failed: ${res.status}`);
+      load();
+    } catch (err) {
+      alert("Не вдалося оновити статус архіву. Спробуйте ще раз.");
+    }
   });
 
   const del = document.createElement("button");
