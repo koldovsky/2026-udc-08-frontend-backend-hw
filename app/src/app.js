@@ -21,6 +21,12 @@ function currentUser(req, res, next) {
   next();
 }
 
+// SQLite has no boolean type; `archived` is stored as 0/1. Cast it to a
+// real boolean at the API boundary instead of leaking the storage detail.
+function toNoteResponse(row) {
+  return { ...row, archived: Boolean(row.archived) };
+}
+
 export function createApp(db) {
   const app = express();
   app.use(express.json());
@@ -28,21 +34,24 @@ export function createApp(db) {
 
   app.use("/api", currentUser);
 
-  // List the caller's own notes.
+  // List the caller's own notes (active and archived alike; the client
+  // decides which to show — see the Активні/Архів toggle in the UI).
   app.get("/api/notes", (req, res) => {
     const rows = db
-      .prepare("SELECT id, title, body, created_at FROM notes WHERE user_id = ? ORDER BY id")
+      .prepare("SELECT id, title, body, archived, created_at FROM notes WHERE user_id = ? ORDER BY id")
       .all(req.userId);
-    res.json(rows);
+    res.json(rows.map(toNoteResponse));
   });
 
-  // Read one note.
+  // Read one of the caller's own notes. The owner check belongs in the
+  // query itself — "does this id exist" is not the question; "may this
+  // caller see it" is.
   app.get("/api/notes/:id", (req, res) => {
     const note = db
-      .prepare("SELECT id, user_id, title, body, created_at FROM notes WHERE id = ?")
-      .get(Number(req.params.id));
+      .prepare("SELECT id, title, body, archived, created_at FROM notes WHERE id = ? AND user_id = ?")
+      .get(Number(req.params.id), req.userId);
     if (!note) return res.status(404).json({ error: "not found" });
-    res.json(note);
+    res.json(toNoteResponse(note));
   });
 
   // Create a note for the caller.
@@ -55,9 +64,29 @@ export function createApp(db) {
       .prepare("INSERT INTO notes (user_id, title, body) VALUES (?, ?, ?)")
       .run(req.userId, title, body);
     const created = db
-      .prepare("SELECT id, title, body, created_at FROM notes WHERE id = ?")
+      .prepare("SELECT id, title, body, archived, created_at FROM notes WHERE id = ?")
       .get(info.lastInsertRowid);
-    res.status(201).json(created);
+    res.status(201).json(toNoteResponse(created));
+  });
+
+  // Archive or restore one of the caller's own notes. The client sends the
+  // state it wants (not just "toggle") so the request is self-describing
+  // and idempotent.
+  app.patch("/api/notes/:id/archive", (req, res) => {
+    const archived = req.body?.archived;
+    if (typeof archived !== "boolean") {
+      return res.status(400).json({ error: "archived must be a boolean" });
+    }
+
+    const info = db
+      .prepare("UPDATE notes SET archived = ? WHERE id = ? AND user_id = ?")
+      .run(archived ? 1 : 0, Number(req.params.id), req.userId);
+    if (info.changes === 0) return res.status(404).json({ error: "not found" });
+
+    const updated = db
+      .prepare("SELECT id, title, body, archived, created_at FROM notes WHERE id = ? AND user_id = ?")
+      .get(Number(req.params.id), req.userId);
+    res.json(toNoteResponse(updated));
   });
 
   // Delete one of the caller's own notes.
