@@ -24,8 +24,14 @@
       <button type="submit">Додати</button>
     </form>
 
+    <fieldset id="filter">
+      <legend>Показати</legend>
+      <label><input type="radio" name="filter" value="active" checked /> Активні</label>
+      <label><input type="radio" name="filter" value="archived" /> Архів</label>
+    </fieldset>
+
     <ul id="notes"></ul>
-    <p id="empty" hidden>Нотаток поки немає.</p>
+    <p id="empty" hidden></p>
 
     <script type="module" src="./app.js"></script>
   </body>

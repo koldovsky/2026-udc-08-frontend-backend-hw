@@ -22,9 +22,20 @@ export function createDb(file = ":memory:") {
       user_id   INTEGER NOT NULL REFERENCES users(id),
       title     TEXT NOT NULL,
       body      TEXT NOT NULL DEFAULT '',
+      archived  INTEGER NOT NULL DEFAULT 0,
       created_at TEXT NOT NULL DEFAULT (datetime('now'))
     );
   `);
+
+  // A notes.db file created before the archived column existed won't get it
+  // from CREATE TABLE IF NOT EXISTS, so add it if missing.
+  const hasArchived = db
+    .prepare("PRAGMA table_info(notes)")
+    .all()
+    .some((c) => c.name === "archived");
+  if (!hasArchived) {
+    db.exec("ALTER TABLE notes ADD COLUMN archived INTEGER NOT NULL DEFAULT 0");
+  }
 
   const seeded = db.prepare("SELECT COUNT(*) AS n FROM users").get().n > 0;
   if (!seeded) {

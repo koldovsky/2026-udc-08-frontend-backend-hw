@@ -58,6 +58,44 @@ describe("GET /api/notes/:id", () => {
   it("404s for a note that does not exist", async () => {
     await asOlya(request(app).get("/api/notes/999")).expect(404);
   });
+
+  it("will not read someone else's note", async () => {
+    await asOlya(request(app).get("/api/notes/3")).expect(404);
+  });
+
+  it("does not leak internal fields", async () => {
+    const res = await asOlya(request(app).get("/api/notes/1")).expect(200);
+    expect(res.body).not.toHaveProperty("user_id");
+  });
+});
+
+describe("PATCH /api/notes/:id/archive", () => {
+  it("archives and then unarchives the caller's own note", async () => {
+    const archived = await asOlya(request(app).patch("/api/notes/1/archive")).expect(200);
+    expect(archived.body.archived).toBe(true);
+
+    const restored = await asOlya(request(app).patch("/api/notes/1/archive")).expect(200);
+    expect(restored.body.archived).toBe(false);
+  });
+
+  it("does not leak internal fields", async () => {
+    const res = await asOlya(request(app).patch("/api/notes/1/archive")).expect(200);
+    expect(res.body).not.toHaveProperty("user_id");
+  });
+
+  it("will not archive someone else's note", async () => {
+    await asOlya(request(app).patch("/api/notes/3/archive")).expect(404);
+    const taras = await asTaras(request(app).get("/api/notes")).expect(200);
+    expect(taras.body.find((n) => n.id === 3).archived).toBe(false);
+  });
+
+  it("404s for a note that does not exist", async () => {
+    await asOlya(request(app).patch("/api/notes/999/archive")).expect(404);
+  });
+
+  it("400s for an invalid id", async () => {
+    await asOlya(request(app).patch("/api/notes/not-a-number/archive")).expect(400);
+  });
 });
 
 describe("DELETE /api/notes/:id", () => {
