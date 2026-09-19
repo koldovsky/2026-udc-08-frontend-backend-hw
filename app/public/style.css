@@ -3,13 +3,48 @@ body {
   font: 15px/1.5 system-ui, sans-serif;
   max-width: 680px; margin: 2rem auto; padding: 0 1rem;
 }
-header { display: flex; align-items: baseline; justify-content: space-between; gap: 1rem; }
+header { display: flex; align-items: baseline; justify-content: space-between; gap: 1rem; margin-bottom: 1rem; }
 h1 { font-size: 1.4rem; margin: 0; }
+header select { padding: .4rem .6rem; border-radius: 6px; font: inherit; }
+
+.tabs { display: flex; gap: .5rem; border-bottom: 1px solid #8884; padding-bottom: .5rem; margin-bottom: 1rem; }
+.tab-btn {
+  padding: .5rem 1rem; min-height: 40px; border: 1px solid transparent; border-radius: 6px;
+  background: none; font: inherit; font-weight: 500; cursor: pointer; color: inherit;
+}
+.tab-btn:hover { background: #8882; }
+.tab-btn.active { background: #8883; border-color: #8885; font-weight: 600; }
+.tab-btn:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible {
+  outline: 2px solid #0066cc; outline-offset: 2px;
+}
+
 form { display: flex; gap: .5rem; margin: 1.2rem 0; }
-input { flex: 1; padding: .5rem; border: 1px solid #8884; border-radius: 6px; font: inherit; }
-button { padding: .5rem .9rem; border: 1px solid #8884; border-radius: 6px; background: #8881; font: inherit; cursor: pointer; }
+input { flex: 1; padding: .6rem; min-height: 40px; border: 1px solid #8884; border-radius: 6px; font: inherit; }
+button { min-height: 40px; padding: .5rem .9rem; border: 1px solid #8884; border-radius: 6px; background: #8881; font: inherit; cursor: pointer; }
+button:hover { background: #8883; }
+
 ul { list-style: none; padding: 0; display: grid; gap: .6rem; }
-li { border: 1px solid #8884; border-radius: 8px; padding: .7rem .9rem; display: flex; gap: 1rem; align-items: flex-start; }
+li { border: 1px solid #8884; border-radius: 8px; padding: .8rem 1rem; display: flex; gap: 1rem; align-items: center; }
 li .grow { flex: 1; }
-li strong { display: block; }
-li small { opacity: .65; }
+li strong { display: block; margin-bottom: .2rem; }
+li small { opacity: .7; }
+
+.actions { display: flex; gap: .5rem; flex-wrap: wrap; }
+.btn-archive, .btn-restore, .btn-delete { padding: .4rem .8rem; font-size: 0.9rem; }
+.btn-delete { border-color: #d9534f66; color: #d9534f; }
+.btn-delete:hover { background: #d9534f22; }
+
+.empty-state { text-align: center; color: #888; margin: 2rem 0; font-style: italic; }
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+

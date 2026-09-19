@@ -30,17 +30,26 @@ export function createApp(db) {
 
   // List the caller's own notes.
   app.get("/api/notes", (req, res) => {
+    const isArchived = req.query.archived === "true" || req.query.archived === "1" ? 1 : 0;
     const rows = db
-      .prepare("SELECT id, title, body, created_at FROM notes WHERE user_id = ? ORDER BY id")
-      .all(req.userId);
+      .prepare(
+        "SELECT id, title, body, is_archived, created_at FROM notes WHERE user_id = ? AND is_archived = ? ORDER BY id"
+      )
+      .all(req.userId, isArchived);
     res.json(rows);
   });
 
-  // Read one note.
+  // Read one note owned by the caller.
   app.get("/api/notes/:id", (req, res) => {
+    const id = Number(req.params.id);
+    if (!Number.isInteger(id) || id <= 0) {
+      return res.status(400).json({ error: "invalid note id" });
+    }
     const note = db
-      .prepare("SELECT id, user_id, title, body, created_at FROM notes WHERE id = ?")
-      .get(Number(req.params.id));
+      .prepare(
+        "SELECT id, title, body, is_archived, created_at FROM notes WHERE id = ? AND user_id = ?"
+      )
+      .get(id, req.userId);
     if (!note) return res.status(404).json({ error: "not found" });
     res.json(note);
   });
@@ -52,19 +61,50 @@ export function createApp(db) {
     if (!title) return res.status(400).json({ error: "title is required" });
 
     const info = db
-      .prepare("INSERT INTO notes (user_id, title, body) VALUES (?, ?, ?)")
+      .prepare("INSERT INTO notes (user_id, title, body, is_archived) VALUES (?, ?, ?, 0)")
       .run(req.userId, title, body);
     const created = db
-      .prepare("SELECT id, title, body, created_at FROM notes WHERE id = ?")
+      .prepare("SELECT id, title, body, is_archived, created_at FROM notes WHERE id = ?")
       .get(info.lastInsertRowid);
     res.status(201).json(created);
   });
 
+  // Archive or unarchive one of caller's notes.
+  app.patch("/api/notes/:id/archive", (req, res) => {
+    const id = Number(req.params.id);
+    if (!Number.isInteger(id) || id <= 0) {
+      return res.status(400).json({ error: "invalid note id" });
+    }
+    if (typeof req.body?.archived !== "boolean") {
+      return res.status(400).json({ error: "archived must be a boolean" });
+    }
+
+    const archivedVal = req.body.archived ? 1 : 0;
+    const info = db
+      .prepare("UPDATE notes SET is_archived = ? WHERE id = ? AND user_id = ?")
+      .run(archivedVal, id, req.userId);
+
+    if (info.changes === 0) {
+      return res.status(404).json({ error: "not found" });
+    }
+
+    const updated = db
+      .prepare(
+        "SELECT id, title, body, is_archived, created_at FROM notes WHERE id = ? AND user_id = ?"
+      )
+      .get(id, req.userId);
+    res.json(updated);
+  });
+
   // Delete one of the caller's own notes.
   app.delete("/api/notes/:id", (req, res) => {
+    const id = Number(req.params.id);
+    if (!Number.isInteger(id) || id <= 0) {
+      return res.status(400).json({ error: "invalid note id" });
+    }
     const info = db
       .prepare("DELETE FROM notes WHERE id = ? AND user_id = ?")
-      .run(Number(req.params.id), req.userId);
+      .run(id, req.userId);
     if (info.changes === 0) return res.status(404).json({ error: "not found" });
     res.status(204).end();
   });

@@ -9,7 +9,7 @@
   <body>
     <header>
       <h1>Нотатки</h1>
-      <label>
+      <label for="user">
         Я увійшов як
         <select id="user">
           <option value="1">Оля</option>
@@ -18,14 +18,22 @@
       </label>
     </header>
 
-    <form id="new-note">
+    <nav class="tabs" aria-label="Фільтр нотаток">
+      <button type="button" id="tab-active" class="tab-btn active" aria-current="page">Активні</button>
+      <button type="button" id="tab-archived" class="tab-btn">Архів</button>
+    </nav>
+
+    <form id="new-note" aria-label="Створити нотатку">
+      <label for="title" class="sr-only">Заголовок</label>
       <input id="title" placeholder="Заголовок" required />
+      <label for="body" class="sr-only">Текст</label>
       <input id="body" placeholder="Текст" />
       <button type="submit">Додати</button>
     </form>
 
-    <ul id="notes"></ul>
-    <p id="empty" hidden>Нотаток поки немає.</p>
+    <ul id="notes" aria-label="Список нотаток"></ul>
+    <p id="empty" class="empty-state" hidden>Нотаток поки немає.</p>
+    <p id="empty-archived" class="empty-state" hidden>Архівованих нотаток немає.</p>
 
     <script type="module" src="./app.js"></script>
   </body>

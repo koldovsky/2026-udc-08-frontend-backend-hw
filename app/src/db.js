@@ -22,9 +22,15 @@ export function createDb(file = ":memory:") {
       user_id   INTEGER NOT NULL REFERENCES users(id),
       title     TEXT NOT NULL,
       body      TEXT NOT NULL DEFAULT '',
+      is_archived INTEGER NOT NULL DEFAULT 0,
       created_at TEXT NOT NULL DEFAULT (datetime('now'))
     );
   `);
+
+  const cols = db.prepare("PRAGMA table_info(notes)").all();
+  if (!cols.some((c) => c.name === "is_archived")) {
+    db.exec("ALTER TABLE notes ADD COLUMN is_archived INTEGER NOT NULL DEFAULT 0;");
+  }
 
   const seeded = db.prepare("SELECT COUNT(*) AS n FROM users").get().n > 0;
   if (!seeded) {
