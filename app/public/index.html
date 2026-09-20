@@ -19,13 +19,30 @@
     </header>
 
     <form id="new-note">
-      <input id="title" placeholder="Заголовок" required />
-      <input id="body" placeholder="Текст" />
+      <label class="field">
+        Заголовок
+        <input id="title" name="title" autocomplete="off" required />
+      </label>
+      <label class="field">
+        Текст
+        <input id="body" name="body" autocomplete="off" />
+      </label>
       <button type="submit">Додати</button>
     </form>
 
-    <ul id="notes"></ul>
-    <p id="empty" hidden>Нотаток поки немає.</p>
+    <div id="filters" role="tablist" aria-label="Список нотаток">
+      <button type="button" role="tab" id="filter-active" aria-selected="true" aria-controls="notes-panel" tabindex="0">
+        Активні
+      </button>
+      <button type="button" role="tab" id="filter-archived" aria-selected="false" aria-controls="notes-panel" tabindex="-1">
+        Архів
+      </button>
+    </div>
+
+    <div id="notes-panel" role="tabpanel" aria-labelledby="filter-active">
+      <ul id="notes"></ul>
+      <p id="empty" hidden>Активних нотаток немає.</p>
+    </div>
 
     <script type="module" src="./app.js"></script>
   </body>

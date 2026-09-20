@@ -18,13 +18,23 @@ export function createDb(file = ":memory:") {
     );
 
     CREATE TABLE IF NOT EXISTS notes (
-      id        INTEGER PRIMARY KEY AUTOINCREMENT,
-      user_id   INTEGER NOT NULL REFERENCES users(id),
-      title     TEXT NOT NULL,
-      body      TEXT NOT NULL DEFAULT '',
-      created_at TEXT NOT NULL DEFAULT (datetime('now'))
+      id         INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id    INTEGER NOT NULL REFERENCES users(id),
+      title      TEXT NOT NULL,
+      body       TEXT NOT NULL DEFAULT '',
+      created_at TEXT NOT NULL DEFAULT (datetime('now')),
+      archived   INTEGER NOT NULL DEFAULT 0
     );
   `);
+
+  // Existing notes.db was created before `archived` existed.
+  // CREATE TABLE IF NOT EXISTS will not add a column to that table,
+  // so ALTER TABLE backfills it without dropping rows. New databases
+  // (including :memory: tests) already have the column from CREATE.
+  const noteColumns = db.prepare("PRAGMA table_info(notes)").all();
+  if (!noteColumns.some((col) => col.name === "archived")) {
+    db.exec("ALTER TABLE notes ADD COLUMN archived INTEGER NOT NULL DEFAULT 0");
+  }
 
   const seeded = db.prepare("SELECT COUNT(*) AS n FROM users").get().n > 0;
   if (!seeded) {
