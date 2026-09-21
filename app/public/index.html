@@ -24,8 +24,12 @@
       <button type="submit">Додати</button>
     </form>
 
+    <div class="views" role="group" aria-label="Note view">
+      <button type="button" data-view="active" aria-pressed="true">Active</button>
+      <button type="button" data-view="archived" aria-pressed="false">Archived</button>
+    </div>
     <ul id="notes"></ul>
-    <p id="empty" hidden>Нотаток поки немає.</p>
+    <p id="empty" aria-live="polite" hidden></p>
 
     <script type="module" src="./app.js"></script>
   </body>
