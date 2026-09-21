@@ -4,6 +4,10 @@ import { dirname, resolve } from "node:path";
 
 const here = dirname(fileURLToPath(import.meta.url));
 
+function noteForClient(note) {
+  return { ...note, archived: Boolean(note.archived) };
+}
+
 /**
  * Pretend session. A real app would verify a signed cookie or a JWT here;
  * that is deliberately out of scope — this workshop is about what happens
@@ -31,16 +35,16 @@ export function createApp(db) {
   // List the caller's own notes.
   app.get("/api/notes", (req, res) => {
     const rows = db
-      .prepare("SELECT id, title, body, created_at FROM notes WHERE user_id = ? ORDER BY id")
+      .prepare("SELECT id, title, body, created_at, archived FROM notes WHERE user_id = ? ORDER BY id")
       .all(req.userId);
-    res.json(rows);
+    res.json(rows.map(noteForClient));
   });
 
   // Read one note.
   app.get("/api/notes/:id", (req, res) => {
     const note = db
-      .prepare("SELECT id, user_id, title, body, created_at FROM notes WHERE id = ?")
-      .get(Number(req.params.id));
+      .prepare("SELECT id, user_id, title, body, created_at FROM notes WHERE id = ? AND user_id = ?")
+      .get(Number(req.params.id), req.userId);
     if (!note) return res.status(404).json({ error: "not found" });
     res.json(note);
   });
@@ -55,9 +59,28 @@ export function createApp(db) {
       .prepare("INSERT INTO notes (user_id, title, body) VALUES (?, ?, ?)")
       .run(req.userId, title, body);
     const created = db
-      .prepare("SELECT id, title, body, created_at FROM notes WHERE id = ?")
+      .prepare("SELECT id, title, body, created_at, archived FROM notes WHERE id = ?")
       .get(info.lastInsertRowid);
-    res.status(201).json(created);
+    res.status(201).json(noteForClient(created));
+  });
+
+  // Set the caller's archive state for one of their own notes.
+  app.patch("/api/notes/:id/archive", (req, res) => {
+    const id = Number(req.params.id);
+    if (!Number.isInteger(id) || id <= 0) {
+      return res.status(400).json({ error: "invalid note id" });
+    }
+
+    const { archived } = req.body ?? {};
+    if (typeof archived !== "boolean") {
+      return res.status(400).json({ error: "archived must be a boolean" });
+    }
+
+    const info = db
+      .prepare("UPDATE notes SET archived = ? WHERE id = ? AND user_id = ?")
+      .run(Number(archived), id, req.userId);
+    if (info.changes === 0) return res.status(404).json({ error: "not found" });
+    res.json({ id, archived });
   });
 
   // Delete one of the caller's own notes.

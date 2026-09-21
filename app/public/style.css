@@ -1,15 +1,25 @@
-:root { color-scheme: light dark; }
+:root { color-scheme: light; }
 body {
+  color: #1f2937; background: #fff;
   font: 15px/1.5 system-ui, sans-serif;
   max-width: 680px; margin: 2rem auto; padding: 0 1rem;
 }
 header { display: flex; align-items: baseline; justify-content: space-between; gap: 1rem; }
 h1 { font-size: 1.4rem; margin: 0; }
 form { display: flex; gap: .5rem; margin: 1.2rem 0; }
-input { flex: 1; padding: .5rem; border: 1px solid #8884; border-radius: 6px; font: inherit; }
-button { padding: .5rem .9rem; border: 1px solid #8884; border-radius: 6px; background: #8881; font: inherit; cursor: pointer; }
+input { flex: 1; padding: .5rem; border: 1px solid #6b7280; border-radius: 6px; font: inherit; }
+button {
+  min-height: 44px; padding: .5rem .9rem; border: 1px solid #4b5563;
+  border-radius: 6px; background: #f3f4f6; color: #1f2937; font: inherit; cursor: pointer;
+}
+button:hover { background: #e5e7eb; }
+button:focus-visible { outline: 3px solid #2563eb; outline-offset: 2px; }
+.views { display: flex; gap: .5rem; margin-bottom: .8rem; }
+.views button[aria-pressed="true"] { background: #1d4ed8; border-color: #1d4ed8; color: #fff; }
 ul { list-style: none; padding: 0; display: grid; gap: .6rem; }
-li { border: 1px solid #8884; border-radius: 8px; padding: .7rem .9rem; display: flex; gap: 1rem; align-items: flex-start; }
+li { border: 1px solid #9ca3af; border-radius: 8px; padding: .7rem .9rem; display: flex; gap: 1rem; align-items: flex-start; }
 li .grow { flex: 1; }
 li strong { display: block; }
-li small { opacity: .65; }
+li small { opacity: .75; }
+.actions { display: flex; flex-wrap: wrap; gap: .5rem; }
+.status { display: inline-block; margin-top: .3rem; padding: .1rem .45rem; border-radius: 999px; background: #dcfce7; color: #14532d; font-size: .85rem; font-weight: 700; }
