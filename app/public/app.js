@@ -6,17 +6,30 @@ const userSelect = document.querySelector("#user");
 const list = document.querySelector("#notes");
 const empty = document.querySelector("#empty");
 const form = document.querySelector("#new-note");
+const filterActiveBtn = document.querySelector("#filter-active");
+const filterArchivedBtn = document.querySelector("#filter-archived");
 
 function headers() {
   return { "content-type": "application/json", "x-user-id": userSelect.value };
 }
 
+let view = "active";
+
+function setView(next) {
+  view = next;
+  filterActiveBtn.setAttribute("aria-pressed", String(view === "active"));
+  filterArchivedBtn.setAttribute("aria-pressed", String(view === "archived"));
+  load();
+}
+
 async function load() {
   const res = await fetch("/api/notes", { headers: headers() });
   const notes = await res.json();
+  const shown = notes.filter((n) => n.archived === (view === "archived"));
 
   list.replaceChildren(
-    ...notes.map((n) => {
+    ...shown.map((n) => {
+      const isArchived = n.archived;
       const li = document.createElement("li");
 
       const grow = document.createElement("div");
@@ -29,18 +42,32 @@ async function load() {
       when.textContent = n.created_at;
       grow.append(title, body, document.createElement("br"), when);
 
+      const archiveBtn = document.createElement("button");
+      archiveBtn.textContent = isArchived ? "Повернути з архіву" : "Архівувати";
+      archiveBtn.setAttribute("aria-label", `${archiveBtn.textContent} нотатку «${n.title}»`);
+      archiveBtn.addEventListener("click", async () => {
+        await fetch(`/api/notes/${n.id}/archive`, {
+          method: "PATCH",
+          headers: headers(),
+          body: JSON.stringify({ archived: !isArchived }),
+        });
+        load();
+      });
+
       const del = document.createElement("button");
       del.textContent = "Видалити";
+      del.setAttribute("aria-label", `Видалити нотатку «${n.title}»`);
       del.addEventListener("click", async () => {
         await fetch(`/api/notes/${n.id}`, { method: "DELETE", headers: headers() });
         load();
       });
 
-      li.append(grow, del);
+      li.append(grow, archiveBtn, del);
       return li;
     }),
   );
-  empty.hidden = notes.length > 0;
+  empty.hidden = shown.length > 0;
+  empty.textContent = view === "archived" ? "В архіві поки немає нотаток." : "Нотаток поки немає.";
 }
 
 form.addEventListener("submit", async (e) => {
@@ -58,4 +85,6 @@ form.addEventListener("submit", async (e) => {
 });
 
 userSelect.addEventListener("change", load);
+filterActiveBtn.addEventListener("click", () => setView("active"));
+filterArchivedBtn.addEventListener("click", () => setView("archived"));
 load();
