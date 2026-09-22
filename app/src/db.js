@@ -22,9 +22,21 @@ export function createDb(file = ":memory:") {
       user_id   INTEGER NOT NULL REFERENCES users(id),
       title     TEXT NOT NULL,
       body      TEXT NOT NULL DEFAULT '',
+      archived  INTEGER NOT NULL DEFAULT 0,
       created_at TEXT NOT NULL DEFAULT (datetime('now'))
     );
   `);
+
+  // Migration for a `notes.db` created before the archived column existed.
+  // Fresh tables (including :memory: ones in tests) already have it from
+  // the CREATE TABLE above, so this is a no-op for them.
+  const hasArchivedColumn = db
+    .prepare("PRAGMA table_info(notes)")
+    .all()
+    .some((c) => c.name === "archived");
+  if (!hasArchivedColumn) {
+    db.exec("ALTER TABLE notes ADD COLUMN archived INTEGER NOT NULL DEFAULT 0");
+  }
 
   const seeded = db.prepare("SELECT COUNT(*) AS n FROM users").get().n > 0;
   if (!seeded) {
