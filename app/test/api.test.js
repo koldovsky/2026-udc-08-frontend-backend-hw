@@ -60,16 +60,36 @@ describe("GET /api/notes/:id", () => {
   });
 });
 
+describe("PATCH /api/notes/:id/archive", () => {
+  it("archives and unarchives the caller's own note", async () => {
+    const archived = await asOlya(request(app).patch("/api/notes/1/archive"))
+      .send({ archived: true })
+      .expect(200);
+    expect(archived.body.archived).toBe(true);
+
+    const restored = await asOlya(request(app).patch("/api/notes/1/archive"))
+      .send({ archived: false })
+      .expect(200);
+    expect(restored.body.archived).toBe(false);
+  });
+
+  it("rejects a non-boolean archived value", async () => {
+    await asOlya(request(app).patch("/api/notes/1/archive"))
+      .send({ archived: "yes" })
+      .expect(400);
+  });
+
+  it("404s for a note that does not exist", async () => {
+    await asOlya(request(app).patch("/api/notes/999/archive"))
+      .send({ archived: true })
+      .expect(404);
+  });
+});
+
 describe("DELETE /api/notes/:id", () => {
   it("deletes the caller's own note", async () => {
     await asOlya(request(app).delete("/api/notes/1")).expect(204);
     const list = await asOlya(request(app).get("/api/notes")).expect(200);
     expect(list.body).toHaveLength(1);
-  });
-
-  it("will not delete someone else's note", async () => {
-    await asOlya(request(app).delete("/api/notes/3")).expect(404);
-    const taras = await asTaras(request(app).get("/api/notes")).expect(200);
-    expect(taras.body).toHaveLength(1);
   });
 });

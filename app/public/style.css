@@ -7,9 +7,12 @@ header { display: flex; align-items: baseline; justify-content: space-between; g
 h1 { font-size: 1.4rem; margin: 0; }
 form { display: flex; gap: .5rem; margin: 1.2rem 0; }
 input { flex: 1; padding: .5rem; border: 1px solid #8884; border-radius: 6px; font: inherit; }
-button { padding: .5rem .9rem; border: 1px solid #8884; border-radius: 6px; background: #8881; font: inherit; cursor: pointer; }
+button { min-height: 2.25rem; padding: .5rem .9rem; border: 1px solid #8884; border-radius: 6px; background: #8881; font: inherit; cursor: pointer; }
+button:focus-visible { outline: 2px solid currentColor; outline-offset: 2px; }
+.filters { display: flex; gap: .5rem; margin: 0 0 1rem; }
+.filters button[aria-pressed="true"] { background: #8884; font-weight: 600; }
 ul { list-style: none; padding: 0; display: grid; gap: .6rem; }
-li { border: 1px solid #8884; border-radius: 8px; padding: .7rem .9rem; display: flex; gap: 1rem; align-items: flex-start; }
-li .grow { flex: 1; }
+li { border: 1px solid #8884; border-radius: 8px; padding: .7rem .9rem; display: flex; gap: .6rem; align-items: flex-start; flex-wrap: wrap; }
+li .grow { flex: 1; min-width: 12rem; }
 li strong { display: block; }
 li small { opacity: .65; }

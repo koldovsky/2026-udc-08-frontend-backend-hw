@@ -26,6 +26,13 @@ export function createDb(file = ":memory:") {
     );
   `);
 
+  // Migration: existing databases predate the `archived` column. Additive
+  // and defaulted, so it never touches existing rows' data.
+  const noteColumns = db.prepare("PRAGMA table_info(notes)").all();
+  if (!noteColumns.some((c) => c.name === "archived")) {
+    db.exec("ALTER TABLE notes ADD COLUMN archived INTEGER NOT NULL DEFAULT 0");
+  }
+
   const seeded = db.prepare("SELECT COUNT(*) AS n FROM users").get().n > 0;
   if (!seeded) {
     db.prepare("INSERT INTO users (id, name) VALUES (?, ?)").run(1, "Оля");
