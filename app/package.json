@@ -8,10 +8,11 @@
     "test": "vitest run"
   },
   "dependencies": {
-    "better-sqlite3": "^11.5.0",
+    "better-sqlite3": "^13.0.3",
     "express": "^4.21.0"
   },
   "devDependencies": {
+    "axe-core": "^4.13.0",
     "supertest": "^7.0.0",
     "vitest": "^2.1.0"
   }
