@@ -41,5 +41,8 @@ nul
 .claude/*
 !.claude/settings.json
 
+# Snapshots and screenshots left behind by browser-driving MCP servers
+.playwright-mcp/
+
 # SQLite database created by `npm run dev`
 *.db

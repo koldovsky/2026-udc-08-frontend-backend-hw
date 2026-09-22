@@ -22,9 +22,19 @@ export function createDb(file = ":memory:") {
       user_id   INTEGER NOT NULL REFERENCES users(id),
       title     TEXT NOT NULL,
       body      TEXT NOT NULL DEFAULT '',
-      created_at TEXT NOT NULL DEFAULT (datetime('now'))
+      created_at TEXT NOT NULL DEFAULT (datetime('now')),
+      archived  INTEGER NOT NULL DEFAULT 0
     );
   `);
+
+  // CREATE TABLE IF NOT EXISTS does nothing to a database that already exists,
+  // and server.js passes a real file — so a database created before `archived`
+  // existed needs the column added explicitly. Purely additive: no row is
+  // rewritten and DEFAULT 0 is what makes NOT NULL legal in ADD COLUMN.
+  const columns = db.prepare("SELECT name FROM pragma_table_info('notes')").all();
+  if (!columns.some((c) => c.name === "archived")) {
+    db.exec("ALTER TABLE notes ADD COLUMN archived INTEGER NOT NULL DEFAULT 0");
+  }
 
   const seeded = db.prepare("SELECT COUNT(*) AS n FROM users").get().n > 0;
   if (!seeded) {

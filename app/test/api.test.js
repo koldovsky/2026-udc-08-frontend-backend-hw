@@ -58,6 +58,110 @@ describe("GET /api/notes/:id", () => {
   it("404s for a note that does not exist", async () => {
     await asOlya(request(app).get("/api/notes/999")).expect(404);
   });
+
+  // The suite shipped with `will not delete someone else's note` but never
+  // asked the same question about reading, which is how the read path stayed
+  // broken while all 9 tests were green.
+  it("will not read someone else's note", async () => {
+    await asOlya(request(app).get("/api/notes/3")).expect(404);
+
+    // Тарас can still read it: the refusal is about the caller, not the note.
+    const owner = await asTaras(request(app).get("/api/notes/3")).expect(200);
+    expect(owner.body.title).toBe("Приватна нотатка Тараса");
+  });
+
+  it("does not expose internal fields on the caller's own note", async () => {
+    const res = await asOlya(request(app).get("/api/notes/1")).expect(200);
+    expect(res.body).not.toHaveProperty("user_id");
+  });
+});
+
+describe("PATCH /api/notes/:id/archive", () => {
+  it("archives the caller's own note", async () => {
+    const res = await asOlya(request(app).patch("/api/notes/1/archive"))
+      .send({ archived: true })
+      .expect(200);
+    expect(res.body.archived).toBe(true);
+  });
+
+  it("keeps the archived note in the caller's list, flagged", async () => {
+    await asOlya(request(app).patch("/api/notes/1/archive")).send({ archived: true });
+
+    const list = await asOlya(request(app).get("/api/notes")).expect(200);
+    expect(list.body).toHaveLength(2);
+    expect(list.body.find((n) => n.id === 1).archived).toBe(true);
+    expect(list.body.find((n) => n.id === 2).archived).toBe(false);
+  });
+
+  it("restores an archived note", async () => {
+    await asOlya(request(app).patch("/api/notes/1/archive")).send({ archived: true });
+
+    const res = await asOlya(request(app).patch("/api/notes/1/archive"))
+      .send({ archived: false })
+      .expect(200);
+    expect(res.body.archived).toBe(false);
+  });
+
+  it("does not return internal fields", async () => {
+    const res = await asOlya(request(app).patch("/api/notes/1/archive"))
+      .send({ archived: true })
+      .expect(200);
+    expect(res.body).not.toHaveProperty("user_id");
+    expect(Object.keys(res.body).sort()).toEqual([
+      "archived",
+      "body",
+      "created_at",
+      "id",
+      "title",
+    ]);
+  });
+
+  // The browser sends a real boolean; anything else can still reach the server.
+  it.each([
+    ["a string", { archived: "true" }],
+    ["a number", { archived: 1 }],
+    ["null", { archived: null }],
+    ["nothing at all", {}],
+  ])("rejects archived given as %s", async (_label, body) => {
+    await asOlya(request(app).patch("/api/notes/1/archive")).send(body).expect(400);
+  });
+
+  it("rejects an id that is not a number", async () => {
+    await asOlya(request(app).patch("/api/notes/abc/archive"))
+      .send({ archived: true })
+      .expect(400);
+  });
+
+  it("404s for a note that does not exist", async () => {
+    await asOlya(request(app).patch("/api/notes/999/archive"))
+      .send({ archived: true })
+      .expect(404);
+  });
+
+  it("requires a user header", async () => {
+    await request(app).patch("/api/notes/1/archive").send({ archived: true }).expect(401);
+  });
+
+  // The authorization question for the endpoint added in Task B: not "does note
+  // 3 exist" but "may Оля touch it".
+  it("will not archive someone else's note", async () => {
+    await asOlya(request(app).patch("/api/notes/3/archive"))
+      .send({ archived: true })
+      .expect(404);
+
+    const taras = await asTaras(request(app).get("/api/notes")).expect(200);
+    expect(taras.body).toHaveLength(1);
+    expect(taras.body[0].archived).toBe(false);
+  });
+});
+
+describe("POST /api/notes", () => {
+  it("creates notes unarchived", async () => {
+    const res = await asOlya(request(app).post("/api/notes"))
+      .send({ title: "Нова" })
+      .expect(201);
+    expect(res.body.archived).toBe(false);
+  });
 });
 
 describe("DELETE /api/notes/:id", () => {

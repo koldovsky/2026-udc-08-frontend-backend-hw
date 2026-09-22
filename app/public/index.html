@@ -18,14 +18,32 @@
       </label>
     </header>
 
-    <form id="new-note">
-      <input id="title" placeholder="Заголовок" required />
-      <input id="body" placeholder="Текст" />
-      <button type="submit">Додати</button>
-    </form>
+    <!-- Everything below the header is the notes themselves, so it belongs in
+         one <main>: without a landmark, screen-reader users have no way to skip
+         past the header, and each control is announced with no container. -->
+    <main>
+      <!-- A placeholder is not a label: it disappears the moment you type, and
+           it is gone entirely once the field is filled. axe accepts it as an
+           accessible name, so the fields passed the automated check — the real
+           <label> is here because the check cannot see that problem. -->
+      <form id="new-note">
+        <label class="sr-only" for="title">Заголовок нотатки</label>
+        <input id="title" placeholder="Заголовок" required />
+        <label class="sr-only" for="body">Текст нотатки</label>
+        <input id="body" placeholder="Текст" />
+        <button type="submit">Додати</button>
+      </form>
 
-    <ul id="notes"></ul>
-    <p id="empty" hidden>Нотаток поки немає.</p>
+      <div class="views" role="group" aria-label="Фільтр нотаток">
+        <button type="button" id="view-active" aria-pressed="true">Активні</button>
+        <button type="button" id="view-archive" aria-pressed="false">Архів</button>
+      </div>
+
+      <p id="status" role="status"></p>
+
+      <ul id="notes"></ul>
+      <p id="empty" hidden>Нотаток поки немає.</p>
+    </main>
 
     <script type="module" src="./app.js"></script>
   </body>
