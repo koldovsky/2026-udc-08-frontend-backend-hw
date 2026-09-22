@@ -6,15 +6,23 @@ const userSelect = document.querySelector("#user");
 const list = document.querySelector("#notes");
 const empty = document.querySelector("#empty");
 const form = document.querySelector("#new-note");
+const filterActiveBtn = document.querySelector("#filter-active");
+const filterArchivedBtn = document.querySelector("#filter-archived");
+
+let showArchived = false;
 
 function headers() {
   return { "content-type": "application/json", "x-user-id": userSelect.value };
 }
 
-async function load() {
-  const res = await fetch("/api/notes", { headers: headers() });
-  const notes = await res.json();
+function setFilter(archived) {
+  showArchived = archived;
+  filterActiveBtn.setAttribute("aria-pressed", String(!archived));
+  filterArchivedBtn.setAttribute("aria-pressed", String(archived));
+  load();
+}
 
+function render(notes) {
   list.replaceChildren(
     ...notes.map((n) => {
       const li = document.createElement("li");
@@ -29,18 +37,50 @@ async function load() {
       when.textContent = n.created_at;
       grow.append(title, body, document.createElement("br"), when);
 
+      const actions = document.createElement("div");
+      actions.className = "actions";
+
+      const archiveBtn = document.createElement("button");
+      archiveBtn.type = "button";
+      archiveBtn.textContent = n.archived ? "Повернути з архіву" : "Архівувати";
+      archiveBtn.setAttribute(
+        "aria-label",
+        `${n.archived ? "Повернути з архіву" : "Архівувати"} нотатку «${n.title}»`,
+      );
+      archiveBtn.addEventListener("click", async () => {
+        await fetch(`/api/notes/${n.id}/archive`, {
+          method: "PATCH",
+          headers: headers(),
+          body: JSON.stringify({ archived: !n.archived }),
+        });
+        load();
+      });
+
       const del = document.createElement("button");
+      del.type = "button";
       del.textContent = "Видалити";
+      del.setAttribute("aria-label", `Видалити нотатку «${n.title}»`);
       del.addEventListener("click", async () => {
         await fetch(`/api/notes/${n.id}`, { method: "DELETE", headers: headers() });
         load();
       });
 
-      li.append(grow, del);
+      actions.append(archiveBtn, del);
+      li.append(grow, actions);
       return li;
     }),
   );
+
   empty.hidden = notes.length > 0;
+  empty.textContent = showArchived
+    ? "В архіві поки немає нотаток."
+    : "Активних нотаток немає.";
+}
+
+async function load() {
+  const res = await fetch(`/api/notes?archived=${showArchived}`, { headers: headers() });
+  const notes = await res.json();
+  render(notes);
 }
 
 form.addEventListener("submit", async (e) => {
@@ -57,5 +97,11 @@ form.addEventListener("submit", async (e) => {
   load();
 });
 
-userSelect.addEventListener("change", load);
+filterActiveBtn.addEventListener("click", () => setFilter(false));
+filterArchivedBtn.addEventListener("click", () => setFilter(true));
+
+userSelect.addEventListener("change", () => {
+  setFilter(false);
+});
+
 load();

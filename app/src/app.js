@@ -28,21 +28,35 @@ export function createApp(db) {
 
   app.use("/api", currentUser);
 
-  // List the caller's own notes.
+  // SQLite has no boolean type; `archived` is stored as 0/1. Never leak that
+  // storage detail to the client — always hand back a real boolean.
+  const asNote = (row) => ({ ...row, archived: Boolean(row.archived) });
+
+  // List the caller's own notes. Defaults to the active ones; pass
+  // `?archived=true` to see the archived ones instead. Any other value for
+  // the query param (missing, "false", garbage) is treated as "active" —
+  // this is a display filter over the caller's own rows, not a security
+  // boundary, so there is nothing unsafe about defaulting it.
   app.get("/api/notes", (req, res) => {
+    const archived = req.query.archived === "true" ? 1 : 0;
     const rows = db
-      .prepare("SELECT id, title, body, created_at FROM notes WHERE user_id = ? ORDER BY id")
-      .all(req.userId);
-    res.json(rows);
+      .prepare(
+        "SELECT id, title, body, archived, created_at FROM notes WHERE user_id = ? AND archived = ? ORDER BY id",
+      )
+      .all(req.userId, archived);
+    res.json(rows.map(asNote));
   });
 
-  // Read one note.
+  // Read one of the caller's own notes. The ownership check is part of the
+  // SELECT itself (WHERE id = ? AND user_id = ?), not a check performed on
+  // the row after fetching it — a mismatched id and a mismatched owner both
+  // come back as "not found", so the response never reveals which one it was.
   app.get("/api/notes/:id", (req, res) => {
     const note = db
-      .prepare("SELECT id, user_id, title, body, created_at FROM notes WHERE id = ?")
-      .get(Number(req.params.id));
+      .prepare("SELECT id, title, body, archived, created_at FROM notes WHERE id = ? AND user_id = ?")
+      .get(Number(req.params.id), req.userId);
     if (!note) return res.status(404).json({ error: "not found" });
-    res.json(note);
+    res.json(asNote(note));
   });
 
   // Create a note for the caller.
@@ -55,9 +69,35 @@ export function createApp(db) {
       .prepare("INSERT INTO notes (user_id, title, body) VALUES (?, ?, ?)")
       .run(req.userId, title, body);
     const created = db
-      .prepare("SELECT id, title, body, created_at FROM notes WHERE id = ?")
+      .prepare("SELECT id, title, body, archived, created_at FROM notes WHERE id = ?")
       .get(info.lastInsertRowid);
-    res.status(201).json(created);
+    res.status(201).json(asNote(created));
+  });
+
+  // Archive or unarchive one of the caller's own notes.
+  app.patch("/api/notes/:id/archive", (req, res) => {
+    const id = Number(req.params.id);
+    if (!Number.isInteger(id) || id <= 0) {
+      return res.status(400).json({ error: "invalid note id" });
+    }
+
+    const archived = req.body?.archived;
+    if (typeof archived !== "boolean") {
+      return res.status(400).json({ error: "archived must be a boolean" });
+    }
+
+    // The ownership check lives in the WHERE clause of the write itself —
+    // not as a lookup-then-check afterwards — so there is no window where a
+    // row is fetched before we know the caller is allowed to touch it.
+    const info = db
+      .prepare("UPDATE notes SET archived = ? WHERE id = ? AND user_id = ?")
+      .run(archived ? 1 : 0, id, req.userId);
+    if (info.changes === 0) return res.status(404).json({ error: "not found" });
+
+    const note = db
+      .prepare("SELECT id, title, body, archived, created_at FROM notes WHERE id = ?")
+      .get(id);
+    res.json(asNote(note));
   });
 
   // Delete one of the caller's own notes.
