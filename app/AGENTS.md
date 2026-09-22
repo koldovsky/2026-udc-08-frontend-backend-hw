@@ -18,6 +18,28 @@ npm test        # vitest run
 npm run dev     # http://localhost:3080 (writes notes.db)
 ```
 
+Run these from `app/`, not the repo root — the root has no `package.json`,
+and `npm install` there only leaves behind an empty lockfile.
+
+## Dependencies
+
+`package.json` cannot carry comments, so the reasoning lives here
+(updated 2026-09-22):
+
+- `better-sqlite3` `^12.11.1` — was `^11.5.0`. The 11.x line has no prebuilt
+  binary for Node 24, so `npm install` fell back to compiling with node-gyp
+  and failed on machines without Python and a C++ toolchain. 12.x ships
+  Node 24 prebuilds; the API used here (`pragma`, `exec`, `prepare`,
+  `transaction`) is unchanged. Do not downgrade below 12.
+- `vitest` `^5.0.1` — was `^2.1.0`. `npm audit` flagged the 2.x chain
+  (vitest, vite, vite-node, esbuild, @vitest/mocker) with one critical, one
+  high and several moderate advisories. They concerned the vitest UI and vite
+  dev server, which this project never runs, but the upgrade is the only way
+  to a clean audit. `vitest run` needed no config or test changes.
+- `npm audit` is expected to report **0 vulnerabilities**. If a new advisory
+  appears, prefer `npm audit fix` (semver-compatible); reach for `--force` only
+  after confirming `npm test` is still green.
+
 ## Architecture
 
 - `src/db.js` — `createDb(file)` builds the schema and seeds it. Tests call it

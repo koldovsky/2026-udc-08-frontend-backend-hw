@@ -4,28 +4,46 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Нотатки — UDC WS8</title>
+    <link rel="icon" href="data:," />
     <link rel="stylesheet" href="./style.css" />
   </head>
   <body>
-    <header>
-      <h1>Нотатки</h1>
-      <label>
-        Я увійшов як
-        <select id="user">
-          <option value="1">Оля</option>
-          <option value="2">Тарас</option>
-        </select>
-      </label>
-    </header>
+    <main>
+      <header>
+        <h1>Нотатки</h1>
+        <label>
+          Я увійшов як
+          <select id="user">
+            <option value="1">Оля</option>
+            <option value="2">Тарас</option>
+          </select>
+        </label>
+      </header>
 
-    <form id="new-note">
-      <input id="title" placeholder="Заголовок" required />
-      <input id="body" placeholder="Текст" />
-      <button type="submit">Додати</button>
-    </form>
+      <form id="new-note" aria-label="Нова нотатка">
+        <label class="sr-only" for="title">Заголовок</label>
+        <input id="title" placeholder="Заголовок" maxlength="200" autocomplete="off" required />
+        <label class="sr-only" for="body">Текст</label>
+        <input id="body" placeholder="Текст" maxlength="10000" autocomplete="off" />
+        <button type="submit">Додати</button>
+      </form>
 
-    <ul id="notes"></ul>
-    <p id="empty" hidden>Нотаток поки немає.</p>
+      <div class="filters" role="group" aria-label="Фільтр нотаток">
+        <button type="button" class="filter" data-filter="active" aria-pressed="true">
+          Активні
+        </button>
+        <button type="button" class="filter" data-filter="archived" aria-pressed="false">
+          Архів
+        </button>
+      </div>
+
+      <p id="status" role="status" aria-live="polite"></p>
+      <p id="error" role="alert"></p>
+
+      <h2 id="list-heading" tabindex="-1">Активні нотатки</h2>
+      <ul id="notes" aria-labelledby="list-heading"></ul>
+      <p id="empty" role="status"></p>
+    </main>
 
     <script type="module" src="./app.js"></script>
   </body>
