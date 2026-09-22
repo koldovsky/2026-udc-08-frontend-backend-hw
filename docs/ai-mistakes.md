@@ -40,15 +40,24 @@ IdeaProjects через під'єднану теку; редагування ф�
   ```
 
   Закрито тестами в `app/test/authorization.test.js`
-  (`will not read someone else's note`, `does not expose user_id to the
-  client`). Обидва **червоні на коді до правки** — перевірено прогоном тих
-  самих перевірок проти `git show HEAD:app/src/app.js`:
+  (`GET /api/notes/:id на чужій нотатці › відповідає 404 і не витікає ані
+  заголовок, ані текст` — обома користувачами — та `форма відповіді › кожен
+  маршрут віддає рівно публічні поля — без user_id`). Усі **червоні на коді
+  до правки** — перевірено, підставивши `git show main:app/src/app.js` на
+  місце `app/src/app.js` і прогнавши `vitest run test/api.test.js
+  test/authorization.test.js`:
 
   ```text
-  == засіяні 9 тестів (до правки) ==  9 ok
-  == авторизація (нові тести) ==
-    FAIL Оля не читає нотатку Тараса   expected 404, got 200
-    FAIL user_id не віддається клієнту  у відповіді є user_id
+  ✓ test/api.test.js (9 tests)                       — засіяні 9 зелені
+  × як Оля (id 1) > GET /api/notes/:id на чужій нотатці
+      > відповідає 404 і не витікає ані заголовок, ані текст
+    Error: expected 404 "Not Found", got 200 "OK"
+  × як Тарас (id 2) > GET /api/notes/:id на чужій нотатці
+      > відповідає 404 і не витікає ані заголовок, ані текст
+    Error: expected 404 "Not Found", got 200 "OK"
+  × форма відповіді > кожен маршрут віддає рівно публічні поля — без user_id
+    AssertionError: expected [ 'body', 'created_at', 'id', 'title' ]
+      to deeply equal [ 'archived', 'body', 'created_at', 'id', 'title' ]
   ```
 
 - **Чому агент так зробив (гіпотеза):** у вході була схема таблиці й «дістань
