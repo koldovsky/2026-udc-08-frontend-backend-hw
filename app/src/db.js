@@ -26,6 +26,12 @@ export function createDb(file = ":memory:") {
     );
   `);
 
+  db.transaction(() => {
+    if (!db.pragma("table_info(notes)").some((column) => column.name === "archived")) {
+      db.exec("ALTER TABLE notes ADD COLUMN archived INTEGER NOT NULL DEFAULT 0 CHECK (archived IN (0, 1))");
+    }
+  }).immediate();
+
   const seeded = db.prepare("SELECT COUNT(*) AS n FROM users").get().n > 0;
   if (!seeded) {
     db.prepare("INSERT INTO users (id, name) VALUES (?, ?)").run(1, "Оля");
