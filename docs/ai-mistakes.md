@@ -23,6 +23,14 @@
 - **Evidence** Enter on «Архівувати» removed the note from the active list, and the archive displayed it with «Повернути з архіву». Switching to Taras showed «Архів порожній.». Restoring as Olya showed the same empty status, and the note reappeared under «Активні».
 - **Fix** The archive controls passed these checks as written.
 
+### Follow-up from PR review
+
+The initial keyboard check verified activation but missed focus after the list was replaced. Review identified that focus fell back to the page body. Successful archive and restore now move focus to the stable view selector after the current list refresh.
+
+Review also found that a successful list refresh could retain an earlier loading error. The current successful response now clears the error before rendering. Stale responses still leave the current view untouched.
+
+Browser verification confirmed `document.activeElement.id === "note-view"` after both keyboard archive and restore. After stopping the test server, changing the view displayed the loading error. Restarting the server and adding a note refreshed the list and left the alert empty.
+
 ## Schema migration
 
 `createDb` checks the table schema inside an immediate transaction and adds `archived INTEGER NOT NULL DEFAULT 0 CHECK (archived IN (0, 1))` when needed. Existing rows start active, and subsequent starts preserve their archive state.

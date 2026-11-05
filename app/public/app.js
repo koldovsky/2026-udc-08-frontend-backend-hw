@@ -28,6 +28,7 @@ async function load() {
     return;
   }
   if (version !== loadVersion) return;
+  error.textContent = "";
 
   list.replaceChildren(
     ...notes.map((n) => {
@@ -59,7 +60,8 @@ async function load() {
             body: JSON.stringify({ archived: !archived }),
           });
           if (!res.ok) throw new Error();
-          await load();
+          if (version !== loadVersion) return;
+          if (await load()) noteView.focus();
         } catch {
           if (archive.isConnected) error.textContent = "Не вдалося змінити стан архіву.";
         } finally {
@@ -81,6 +83,7 @@ async function load() {
   );
   empty.hidden = notes.length > 0;
   empty.textContent = archived ? "Архів порожній." : "Активних нотаток поки немає.";
+  return true;
 }
 
 form.addEventListener("submit", async (e) => {
