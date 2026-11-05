@@ -13,3 +13,9 @@ li { border: 1px solid #8884; border-radius: 8px; padding: .7rem .9rem; display:
 li .grow { flex: 1; }
 li strong { display: block; }
 li small { opacity: .65; }
+.note-actions { display: flex; flex-wrap: wrap; gap: .5rem; }
+.note-actions button { min-width: 44px; min-height: 44px; }
+.archive-note { background: #164679; color: #fff; }
+@media (max-width: 540px) {
+  form, li { flex-direction: column; }
+}

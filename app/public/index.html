@@ -24,8 +24,16 @@
       <button type="submit">Додати</button>
     </form>
 
+    <label>
+      Показати
+      <select id="note-view">
+        <option value="active">Активні</option>
+        <option value="archived">Архів</option>
+      </select>
+    </label>
     <ul id="notes"></ul>
-    <p id="empty" hidden>Нотаток поки немає.</p>
+    <p id="empty" role="status" hidden></p>
+    <p id="error" role="alert"></p>
 
     <script type="module" src="./app.js"></script>
   </body>

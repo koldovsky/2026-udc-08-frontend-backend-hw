@@ -6,14 +6,29 @@ const userSelect = document.querySelector("#user");
 const list = document.querySelector("#notes");
 const empty = document.querySelector("#empty");
 const form = document.querySelector("#new-note");
+const noteView = document.querySelector("#note-view");
+const error = document.querySelector("#error");
+let loadVersion = 0;
 
 function headers() {
   return { "content-type": "application/json", "x-user-id": userSelect.value };
 }
 
 async function load() {
-  const res = await fetch("/api/notes", { headers: headers() });
-  const notes = await res.json();
+  const version = ++loadVersion;
+  const requestHeaders = headers();
+  const archived = noteView.value === "archived";
+  let notes;
+  try {
+    const res = await fetch("/api/notes", { headers: requestHeaders });
+    if (!res.ok) throw new Error();
+    notes = (await res.json()).filter((note) => note.archived === archived);
+  } catch {
+    if (version === loadVersion) error.textContent = "Не вдалося завантажити нотатки.";
+    return;
+  }
+  if (version !== loadVersion) return;
+  error.textContent = "";
 
   list.replaceChildren(
     ...notes.map((n) => {
@@ -29,18 +44,46 @@ async function load() {
       when.textContent = n.created_at;
       grow.append(title, body, document.createElement("br"), when);
 
+      const actions = document.createElement("div");
+      actions.className = "note-actions";
+      const archive = document.createElement("button");
+      archive.type = "button";
+      archive.className = "archive-note";
+      archive.textContent = archived ? "Повернути з архіву" : "Архівувати";
+      archive.addEventListener("click", async () => {
+        archive.disabled = true;
+        error.textContent = "";
+        try {
+          const res = await fetch(`/api/notes/${n.id}/archive`, {
+            method: "PATCH",
+            headers: requestHeaders,
+            body: JSON.stringify({ archived: !archived }),
+          });
+          if (!res.ok) throw new Error();
+          if (version !== loadVersion) return;
+          if (await load()) noteView.focus();
+        } catch {
+          if (archive.isConnected) error.textContent = "Не вдалося змінити стан архіву.";
+        } finally {
+          archive.disabled = false;
+        }
+      });
+
       const del = document.createElement("button");
       del.textContent = "Видалити";
       del.addEventListener("click", async () => {
-        await fetch(`/api/notes/${n.id}`, { method: "DELETE", headers: headers() });
+        await fetch(`/api/notes/${n.id}`, { method: "DELETE", headers: requestHeaders });
         load();
       });
 
-      li.append(grow, del);
+      actions.append(archive, del);
+      li.append(grow, actions);
       return li;
     }),
   );
   empty.hidden = notes.length > 0;
+  empty.textContent = archived ? "Архів порожній." : "Активних нотаток поки немає.";
+  return true;
 }
 
 form.addEventListener("submit", async (e) => {
@@ -57,5 +100,13 @@ form.addEventListener("submit", async (e) => {
   load();
 });
 
-userSelect.addEventListener("change", load);
+function changeView() {
+  list.replaceChildren();
+  empty.hidden = true;
+  error.textContent = "";
+  load();
+}
+
+userSelect.addEventListener("change", changeView);
+noteView.addEventListener("change", changeView);
 load();
